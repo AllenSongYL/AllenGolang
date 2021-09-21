@@ -303,14 +303,37 @@ var sliceName  []string = []string{"","",""}
 
 
 
-## 字典
+## 字典map
 
-可以通过key来快速检索
+map时key-value数据结构。可以通过key来快速检索。
+
+
+
+
 
 ### 创建map
 
 ~~~
-varName  :=  map[Type]Type2{}
+
+// 第一张 
+// 先声明,需要先make，make的作用是给map分配数据空间
+var a map[string]string
+a = make(map[string]string, 10)
+
+// 第二章
+// 声明后使用make 
+var cities = make(map[string]string, 10)
+var cities2 = make(map[string]string)
+
+// 声明直接赋值
+var Name map[string]string = map[string]string{
+    "no1" : "wuxi"
+}
+// 使用推导式，最后别要忘了逗号
+varName  :=  map[Type]Type2{
+	"hero" : "sx",
+	"xxx" : "rrr",
+}
 ~~~
 
 
@@ -319,11 +342,83 @@ varName  :=  map[Type]Type2{}
 
 定义一个字典 varName，该字典的 Key 的类型为 Type1，Value 的类型为 Type2。
 
+### 增加更新
+
+map["key"] = value
+
+如果key没有则添加，如果key存在则修改
+
+
+
 ### 删除元素
 
 **delet()函数**
 
+delete(mapName, "key")
+
 delete()函数用于删除集合的元素，参数为map和其对应的key
+
+如果为nil则不进行任何操作
+
+要删除所有的key，遍历key
+
+或者make一个新的，让原来的被gc回收
+
+
+
+### 查找元素
+
+findRes存在key则返回true，否则返回false
+
+
+
+### 遍历map
+
+for k,v := range cities {
+
+​    fmt.Printf("k=%v,v=%v", k, v)
+
+}
+
+### map长度
+
+len(Mapname)
+
+
+
+### map切片
+
+~~~
+var a []map[string]string
+a = make([]map[sring]string, 2)
+
+if a[0] == nil {
+	a[0] = make(map[string]string, 2)
+	a[0]["name"] = "xx"
+	a[0]["age"] = "16"
+// 但是这种方法超出范围会报panic 
+// 这里我们使用切片的append函数,可以动态的增加
+}
+
+newa := map[string]string{
+   xxx : xxx,
+}
+a = append(a,newa)
+~~~
+
+
+
+
+
+
+
+
+
+### sync.map
+
+go中map如果在并发读的情况下是线程安全的，如果是在并发写的情况下，线程是不安全的。Golang 为我们提供了一个 sync.Map 是并发写安全的。
+
+
 
 
 
