@@ -1,3 +1,3 @@
 # AllenGolang
 
-Learn GOlang
+Learn Golang
