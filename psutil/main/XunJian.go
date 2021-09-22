@@ -36,7 +36,7 @@ func replaceSpace(s string) string {
 				str1 += ","
 				n += 1
 				if n == 6 {
-					str1 = str1 + ";"
+					str1 = str1[:len(str1)-1] + ";"
 					n = 0
 				}
 			}
