@@ -90,7 +90,6 @@ func getfile(sftpClient *sftp.Client) string {
 	ainfo, err := os.Stat(localDir)
 	if err == nil {
 		os.MkdirAll(localDir, os.ModePerm)
-		fmt.Println("file create")
 	} else {
 		fmt.Println(ainfo)
 	}
