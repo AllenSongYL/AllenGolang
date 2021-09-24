@@ -87,6 +87,14 @@ func getfile(sftpClient *sftp.Client) string {
 		//fmt.Println("file create")
 	}
 
+	ainfo, err := os.Stat(localDir)
+	if err == nil {
+		os.MkdirAll(localDir, os.ModePerm)
+		fmt.Println("file create")
+	} else {
+		fmt.Println(ainfo)
+	}
+
 	// 打开远程文件
 	remoteConTest, err := sftpClient.Open(remoteFilePath)
 	if err != nil {
