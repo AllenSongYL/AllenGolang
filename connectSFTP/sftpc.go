@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 	"time"
 )
 
@@ -19,7 +20,7 @@ func getConnect() *sftp.Client {
 		clientConfig *ssh.ClientConfig
 		sshClient    *ssh.Client
 		sftpClient   *sftp.Client
-		err          error
+		//err          error
 	)
 
 	// 创建ssh连接
@@ -34,21 +35,21 @@ func getConnect() *sftp.Client {
 	}
 
 	addr = fmt.Sprintf("%s:%d", "192.168.220.111", 22)
-	sshClient, err = ssh.Dial("tcp", addr, clientConfig)
-	if nil != err {
-		fmt.Println("ssh.Dial error", err)
-	} else {
-		fmt.Println("ssh.Dial 成功")
-	}
+	sshClient, _ = ssh.Dial("tcp", addr, clientConfig)
+	//if nil != err {
+	//	fmt.Println("ssh.Dial error","192.168.220.11" , err)
+	//} else {
+	//	fmt.Println("ssh.Dial 192.168.220.11 成功")
+	//}
 
 	// 通过sshClient,创建sftp客户端
-	sftpClient, err = sftp.NewClient(sshClient)
+	sftpClient, _ = sftp.NewClient(sshClient)
 	// err不为空，则表示连接失败
-	if nil != err {
-		fmt.Println("sftp.NewClient error", err)
-	} else {
-		fmt.Println("sftp.NewClient 成功")
-	}
+	//if nil != err {
+	//	fmt.Println("sftp.NewClient error", err)
+	//} else {
+	//	fmt.Println("sftp.NewClient 成功")
+	//}
 	return sftpClient
 }
 
@@ -77,8 +78,14 @@ func getConnect() *sftp.Client {
 
 // 读取远程文件，写入到本地
 func getfile(sftpClient *sftp.Client) string {
-	var remoteFilePath string = "/allen/a.log"
-	var localDir string = "/opt/sftpfile"
+	var remoteFilePath string = "/allen/b.log"
+	var localDir string = "/opt/sftpfile/test"
+
+	_, err := os.Stat(localDir)
+	if err != nil {
+		os.MkdirAll(localDir, os.ModePerm)
+		//fmt.Println("file create")
+	}
 
 	// 打开远程文件
 	remoteConTest, err := sftpClient.Open(remoteFilePath)
@@ -96,7 +103,7 @@ func getfile(sftpClient *sftp.Client) string {
 	var fullLocalFile string = path.Join(localDir, localfile)
 	//var fullLocalFile string = localDir + "\\" + localfile
 
-	fmt.Println("本地文件：" + fullLocalFile)
+	//fmt.Println("本地文件：" + fullLocalFile)
 	downfile, err := os.Create(fullLocalFile)
 	if err != nil {
 		log.Fatal(err)
@@ -111,24 +118,17 @@ func getfile(sftpClient *sftp.Client) string {
 
 // 读取,从sftp下载的本地文件
 func readFile(lfile string) {
-	f, err := os.Open("lfile")
-	if err != nil {
-		fmt.Println("read file fail", err)
-	}
+	f, _ := os.Open(lfile)
 	defer f.Close()
 
-	fd, err := ioutil.ReadAll(f)
-	if err != nil {
-		fmt.Println("read to fd fail", err)
-	} else {
-		fmt.Println(fd)
-	}
+	fd, _ := ioutil.ReadAll(f)
+	result := strings.Replace(string(fd), "\n", "", 1)
+	fmt.Println(result)
 }
 
 func main() {
 	ftpclient := getConnect()
-	defer ftpclient.Close()
-
 	localFile := getfile(ftpclient)
+	defer ftpclient.Close()
 	readFile(localFile)
 }
