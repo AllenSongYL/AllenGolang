@@ -20,36 +20,36 @@ func getConnect() *sftp.Client {
 		clientConfig *ssh.ClientConfig
 		sshClient    *ssh.Client
 		sftpClient   *sftp.Client
-		//err          error
+		err          error
 	)
 
 	// 创建ssh连接
 	auth = make([]ssh.AuthMethod, 0)
-	auth = append(auth, ssh.Password("111")) // 抱歉，这是我电脑密码
+	auth = append(auth, ssh.Password("confbackup")) // 抱歉，这是我电脑密码
 	clientConfig = &ssh.ClientConfig{
 		// User为账户名
-		User:            "allen",
+		User:            "confbackup",
 		Auth:            auth,
 		Timeout:         30 * time.Second,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	addr = fmt.Sprintf("%s:%d", "192.168.220.111", 22)
-	sshClient, _ = ssh.Dial("tcp", addr, clientConfig)
-	//if nil != err {
-	//	fmt.Println("ssh.Dial error","192.168.220.11" , err)
-	//} else {
-	//	fmt.Println("ssh.Dial 192.168.220.11 成功")
-	//}
+	sshClient, err = ssh.Dial("tcp", addr, clientConfig)
+	if nil != err {
+		fmt.Println("ssh 连接失败: ", "10.13.132.53,", err)
+	} else {
+		fmt.Println("ssh 连接成功: 10.13.132.53 ")
+	}
 
 	// 通过sshClient,创建sftp客户端
-	sftpClient, _ = sftp.NewClient(sshClient)
+	sftpClient, err = sftp.NewClient(sshClient)
 	// err不为空，则表示连接失败
-	//if nil != err {
-	//	fmt.Println("sftp.NewClient error", err)
-	//} else {
-	//	fmt.Println("sftp.NewClient 成功")
-	//}
+	if nil != err {
+		fmt.Println("sftp.NewClient 创建失败", err)
+	} else {
+		fmt.Println("sftp.NewClient 创建成功")
+	}
 	return sftpClient
 }
 
@@ -64,7 +64,7 @@ func listFiles(sftpClient *sftp.Client, remoteFilePath string, localDir string) 
 			_, err := os.Stat(fLocalDir)
 			if err != nil {
 				os.MkdirAll(fLocalDir, os.ModePerm)
-				//fmt.Println("file create")
+				fmt.Println(fLocalDir, ":file create success")
 			}
 			newRmFile := path.Join(remoteFilePath, f.Name())
 			// 如果目录下还有目录则递归调用该函数
@@ -72,7 +72,9 @@ func listFiles(sftpClient *sftp.Client, remoteFilePath string, localDir string) 
 		} else {
 			// 调用getfile() 函数， 下载到本地
 			rmfile := path.Join(remoteFilePath, f.Name())
+			fmt.Println("Download remote file---> ", rmfile)
 			getfile(sftpClient, rmfile, localDir)
+
 		}
 	}
 }
@@ -105,6 +107,8 @@ func getfile(sftpClient *sftp.Client, rmfile string, localdir string) string {
 
 	if _, err = remoteConTest.WriteTo(downfile); err != nil {
 		log.Fatal(err)
+	} else {
+		fmt.Println("success download ---> ", fullLocalFile)
 	}
 	return fullLocalFile
 }
@@ -121,7 +125,7 @@ func readFile(lfile string) {
 
 func main() {
 	var remoteFilePath string = "/root/confbackup"
-	var localDir string = "/opt/confbackup/test"
+	var localDir string = "/opt/splunk/data"
 
 	// 判断本地路径存不存在，不存在则创建
 	_, err := os.Stat(localDir)
