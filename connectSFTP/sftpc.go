@@ -53,49 +53,42 @@ func getConnect() *sftp.Client {
 	return sftpClient
 }
 
-// 上传文件
-//func uploadFile(sftpClient *sftp.Client, localFile, remotePath string) {
-//	file, err := os.Open(localFile)
-//	if nil != err {
-//		fmt.Println("os.Open error", err)
-//		return
-//	}
-//	defer file.Close()
-//	remoteFileName := path.Base(localFile)
-//	ftpFile, err := sftpClient.Create(path.Join(remotePath, remoteFileName)) // 这里的remotePath是sftp根目录下的目录，是目录不是文件名
-//	if nil != err {
-//		fmt.Println("sftpClient.Create error", err)
-//		return
-//	}
-//	defer ftpFile.Close()
-//	fileByte, err := ioutil.ReadAll(file)
-//	if nil != err {
-//		fmt.Println("ioutil.ReadAll error", err)
-//		return
-//	}
-//	ftpFile.Write(fileByte)
-//}
+// 列出指定远程路径下所有的文件（不含目录）
+func listFiles(sftpClient *sftp.Client, remoteFilePath string, localDir string) (fileslice []string) {
+	fileslice = make([]string, 10)
 
-// 读取远程文件，写入到本地
-func getfile(sftpClient *sftp.Client) string {
-	var remoteFilePath string = "/allen/b.log"
-	var localDir string = "/opt/sftpfile/test"
+	files, _ := sftpClient.ReadDir(remoteFilePath)
+	for _, f := range files {
+		if f.IsDir() {
+			// 在本地创建同名目录
+			fLocalDir := path.Join(localDir, f.Name())
 
-	_, err := os.Stat(localDir)
-	if err != nil {
-		os.MkdirAll(localDir, os.ModePerm)
-		//fmt.Println("file create")
+			_, err := os.Stat(fLocalDir)
+			if err != nil {
+				os.MkdirAll(fLocalDir, os.ModePerm)
+				//fmt.Println("file create")
+			}
+			newRmFile := path.Join(remoteFilePath, f.Name())
+			// 如果目录下还有目录则递归调用该函数
+			listFiles(sftpClient, newRmFile, fLocalDir)
+		} else {
+			// 将完整本地文件名append到切片
+			fileslice = append(fileslice, path.Join(localDir, f.Name()))
+			// 调用getfile() 函数， 下载到本地
+			rmfile := path.Join(remoteFilePath, f.Name())
+			getfile(sftpClient, rmfile, localDir)
+		}
+
 	}
 
-	ainfo, err := os.Stat(localDir)
-	if err == nil {
-		os.MkdirAll(localDir, os.ModePerm)
-	} else {
-		fmt.Println(ainfo)
-	}
+	return fileslice
+}
 
+// 读取指定远程文件，写入到本地
+// 传入sftpClient和远程文件名，本地下载路径
+func getfile(sftpClient *sftp.Client, rmfile string, localdir string) string {
 	// 打开远程文件
-	remoteConTest, err := sftpClient.Open(remoteFilePath)
+	remoteConTest, err := sftpClient.Open(rmfile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,9 +98,9 @@ func getfile(sftpClient *sftp.Client) string {
 	// 放入栈，栈先进后出
 	defer remoteConTest.Close()
 
-	var localfile string = path.Base(remoteFilePath)
+	var filename = path.Base(rmfile)
 	// windows 和 linux 拼接错误
-	var fullLocalFile string = path.Join(localDir, localfile)
+	var fullLocalFile = path.Join(localdir, filename)
 	//var fullLocalFile string = localDir + "\\" + localfile
 
 	//fmt.Println("本地文件：" + fullLocalFile)
@@ -134,8 +127,20 @@ func readFile(lfile string) {
 }
 
 func main() {
+	var remoteFilePath string = "/root/confbackup"
+	var localDir string = "/opt/confbackup/test"
+
+	// 判断本地路径存不存在，不存在则创建
+	_, err := os.Stat(localDir)
+	if err != nil {
+		os.MkdirAll(localDir, os.ModePerm)
+		//fmt.Println("file create")
+	}
+
 	ftpclient := getConnect()
-	localFile := getfile(ftpclient)
+
+	listFiles(ftpclient, remoteFilePath, localDir)
+
 	defer ftpclient.Close()
-	readFile(localFile)
+	//readFile(localFile)
 }
