@@ -53,10 +53,8 @@ func getConnect() *sftp.Client {
 	return sftpClient
 }
 
-// 列出指定远程路径下所有的文件（不含目录）
-func listFiles(sftpClient *sftp.Client, remoteFilePath string, localDir string) (fileslice []string) {
-	fileslice = make([]string, 10)
-
+// 列出指定远程路径下所有的文件
+func listFiles(sftpClient *sftp.Client, remoteFilePath string, localDir string) {
 	files, _ := sftpClient.ReadDir(remoteFilePath)
 	for _, f := range files {
 		if f.IsDir() {
@@ -72,16 +70,11 @@ func listFiles(sftpClient *sftp.Client, remoteFilePath string, localDir string) 
 			// 如果目录下还有目录则递归调用该函数
 			listFiles(sftpClient, newRmFile, fLocalDir)
 		} else {
-			// 将完整本地文件名append到切片
-			fileslice = append(fileslice, path.Join(localDir, f.Name()))
 			// 调用getfile() 函数， 下载到本地
 			rmfile := path.Join(remoteFilePath, f.Name())
 			getfile(sftpClient, rmfile, localDir)
 		}
-
 	}
-
-	return fileslice
 }
 
 // 读取指定远程文件，写入到本地
@@ -138,9 +131,7 @@ func main() {
 	}
 
 	ftpclient := getConnect()
-
 	listFiles(ftpclient, remoteFilePath, localDir)
 
 	defer ftpclient.Close()
-	//readFile(localFile)
 }
