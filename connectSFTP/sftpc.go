@@ -25,16 +25,16 @@ func getConnect() *sftp.Client {
 
 	// 创建ssh连接
 	auth = make([]ssh.AuthMethod, 0)
-	auth = append(auth, ssh.Password("111")) // 抱歉，这是我电脑密码
+	auth = append(auth, ssh.Password("")) // 抱歉，这是我电脑密码
 	clientConfig = &ssh.ClientConfig{
 		// User为账户名
-		User:            "allen",
+		User:            "confbackup",
 		Auth:            auth,
 		Timeout:         30 * time.Second,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	addr = fmt.Sprintf("%s:%d", "192.168.220.111", 22)
+	//addr = fmt.Sprintf("%s:%d", "192.168.220.111", 22)
 	sshClient, _ = ssh.Dial("tcp", addr, clientConfig)
 	//if nil != err {
 	//	fmt.Println("ssh.Dial error","192.168.220.11" , err)
