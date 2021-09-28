@@ -26,16 +26,26 @@ func getConnect() *sftp.Client {
 	// 创建ssh连接
 	auth = make([]ssh.AuthMethod, 0)
 	// SFTP账号密码
-	auth = append(auth, ssh.Password("confbackup"))
+	// 测试环境
+	auth = append(auth, ssh.Password("111"))
+
+	// 生产环境
+	//auth = append(auth, ssh.Password("confbackup"))
 	clientConfig = &ssh.ClientConfig{
 		// User: SFTP账户名
-		User:            "confbackup",
+		User: "allen",
+		//User:            "confbackup",
 		Auth:            auth,
 		Timeout:         30 * time.Second,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
+	// 测试环境
 	addr = fmt.Sprintf("%s:%d", "192.168.220.111", 22)
+
+	// 生产环境
+	//addr = fmt.Sprintf("%s:%d", "10.13.132.53", 22)
+
 	sshClient, err = ssh.Dial("tcp", addr, clientConfig)
 	if nil != err {
 		fmt.Println("ssh 连接失败: ", "10.13.132.53,", err)
@@ -86,7 +96,7 @@ func getfile(sftpClient *sftp.Client, rmfile string, localdir string) string {
 	// 打开远程文件
 	remoteConTest, err := sftpClient.Open(rmfile)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 	// 延迟语句
 	// 会将其后面跟随的语句进行延迟处理，在 defer 归属的函数即将返回时，将延迟处理的语句按 defer 的逆序进行执行
@@ -107,7 +117,7 @@ func getfile(sftpClient *sftp.Client, rmfile string, localdir string) string {
 	defer downfile.Close()
 
 	if _, err = remoteConTest.WriteTo(downfile); err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	} else {
 		fmt.Println("success download ---> ", fullLocalFile)
 	}
@@ -134,22 +144,27 @@ func main() {
 	timeStartFormat := timeStart.Format("2006-01-02 15:04:05")
 	fmt.Println("程序开始时间：", timeStartFormat)
 
-	var remoteFilePath string = "/root/confbackup"
+	// 测试环境
+	var remoteFilePath string = "/allen"
+
+	// 生产环境
+	//var remoteFilePath string = "/root/confbackup"
 	var localDir string = "/opt/data/NetworkConfigBak"
 
 	// 本地目录/opt/data/NetworkConfigBak/2021-09-28
 	timeFile := timeStart.Format("2006-01-02")
-	localDir = path.Join(localDir, timeFile)
+	localDirData := path.Join(localDir, timeFile)
 
 	// 判断本地路径存不存在，不存在则创建
-	_, err := os.Stat(localDir)
+	_, err := os.Stat(localDirData)
 	if err != nil {
-		os.MkdirAll(localDir, os.ModePerm)
+		os.MkdirAll(localDirData, os.ModePerm)
 		//fmt.Println("file create")
 	}
 
 	ftpclient := getConnect()
-	listFiles(ftpclient, remoteFilePath, localDir)
+	fmt.Println("======开始下载文件======")
+	listFiles(ftpclient, remoteFilePath, localDirData)
 
 	defer ftpclient.Close()
 
@@ -158,6 +173,7 @@ func main() {
 	timeUnix := t.Unix()
 	file15Unix := timeUnix - (15 * 24 * 60 * 60)
 
+	fmt.Println("======开始清理过期文件")
 	// 清理本地目录下过期文件
 	cleanDir(localDir, file15Unix)
 
