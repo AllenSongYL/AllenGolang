@@ -1,11 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 func main() {
+
+	timeStart := time.Now()
+	timeStartFormat := timeStart.Format("2006-01-02 15:04:05")
+	fmt.Println("开始时间：", timeStartFormat)
+
 	// 创建一个默认的路由引擎
 	r := gin.Default()
 

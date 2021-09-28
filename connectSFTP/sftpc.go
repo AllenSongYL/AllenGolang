@@ -8,10 +8,10 @@ import (
 	"log"
 	"os"
 	"path"
-	"strings"
 	"time"
 )
 
+// 连接sftp服务器函数
 func getConnect() *sftp.Client {
 	// 声明变量类型
 	var (
@@ -25,9 +25,10 @@ func getConnect() *sftp.Client {
 
 	// 创建ssh连接
 	auth = make([]ssh.AuthMethod, 0)
-	auth = append(auth, ssh.Password("confbackup")) // 抱歉，这是我电脑密码
+	// SFTP账号密码
+	auth = append(auth, ssh.Password("confbackup"))
 	clientConfig = &ssh.ClientConfig{
-		// User为账户名
+		// User: SFTP账户名
 		User:            "confbackup",
 		Auth:            auth,
 		Timeout:         30 * time.Second,
@@ -113,19 +114,32 @@ func getfile(sftpClient *sftp.Client, rmfile string, localdir string) string {
 	return fullLocalFile
 }
 
-// 读取,从sftp下载的本地文件
-func readFile(lfile string) {
-	f, _ := os.Open(lfile)
-	defer f.Close()
-
-	fd, _ := ioutil.ReadAll(f)
-	result := strings.Replace(string(fd), "\n", "", 1)
-	fmt.Println(result)
+func cleanDir(cleandir string, dayago int64) {
+	dirInfo, _ := ioutil.ReadDir(cleandir)
+	for _, f := range dirInfo {
+		fLocalDir := path.Join(cleandir, f.Name())
+		if f.IsDir() {
+			t, _ := time.ParseInLocation("2006-01-02", f.Name(), time.Local)
+			fileUnix := t.Unix()
+			if fileUnix <= dayago {
+				fmt.Println("删除过期目录 ---> ", fLocalDir)
+				os.RemoveAll(fLocalDir)
+			}
+		}
+	}
 }
 
 func main() {
+	timeStart := time.Now()
+	timeStartFormat := timeStart.Format("2006-01-02 15:04:05")
+	fmt.Println("程序开始时间：", timeStartFormat)
+
 	var remoteFilePath string = "/root/confbackup"
-	var localDir string = "/opt/splunk/data"
+	var localDir string = "/opt/data/NetworkConfigBak"
+
+	// 本地目录/opt/data/NetworkConfigBak/2021-09-28
+	timeFile := timeStart.Format("2006-01-02")
+	localDir = path.Join(localDir, timeFile)
 
 	// 判断本地路径存不存在，不存在则创建
 	_, err := os.Stat(localDir)
@@ -138,4 +152,19 @@ func main() {
 	listFiles(ftpclient, remoteFilePath, localDir)
 
 	defer ftpclient.Close()
+
+	// 获取15天前的unix时间戳
+	t, _ := time.ParseInLocation("2006-01-02", timeFile, time.Local)
+	timeUnix := t.Unix()
+	file15Unix := timeUnix - (15 * 24 * 60 * 60)
+
+	// 清理本地目录下过期文件
+	cleanDir(localDir, file15Unix)
+
+	// 程序结束输出
+	timeEnd := time.Now()
+	timeEndFormat := timeEnd.Format("2006-01-02 15:04:05")
+	fmt.Println("结束时间：", timeEndFormat)
+	timeSub := timeEnd.Sub(timeStart)
+	fmt.Println("运行时长：", timeSub)
 }

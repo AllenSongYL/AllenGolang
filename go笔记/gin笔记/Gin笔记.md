@@ -64,14 +64,22 @@ r.GET("", func(context *gin.Context) {
 ## 返回值
 
 - c.String()
+
 - c.JSON()
+
 - c.JSONP()
+
+  在url中使用?callback=xxx时，会把xxx放在json格式前面
+
+  执行xxx方法，传入json数据。
+
+  主要用来解决跨域问题
+
 - c.XML()
+
 - c.HTML()
 
-+
 
-96-25*38.4/7.-8*6592.38
 
 ## 路由
 

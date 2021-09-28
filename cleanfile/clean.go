@@ -36,6 +36,15 @@ func main() {
 
 	timeStart := time.Now()
 	timeStartFormat := timeStart.Format("2006-01-02 15:04:05")
+	//
+	timeStartFormat2 := timeStart.Format("2006-01-02")
+	t, _ := time.ParseInLocation("2006-01-02", timeStartFormat2, time.Local)
+	timeUnix := t.Unix()
+	fmt.Println(timeUnix)
+	file15Unix := timeUnix - (15 * 24 * 60 * 60)
+	fmt.Println(file15Unix)
+	//
+
 	timeStartUnix := timeStart.Unix()
 	fmt.Println("开始时间：", timeStartFormat)
 
