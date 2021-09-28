@@ -1,0 +1,17 @@
+{{ define "new.html" }}
+<!--define和end成对出现，相当于给模板起个名称，放置c.HTML指定名称的时候找不到-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试返回HTML</title>
+</head>
+<body>
+    <h2>我是一个新闻页面</h2>
+    <h3>传入title：{{ .title }}</h3>
+</body>
+</html>
+
+{{ end }}

@@ -131,3 +131,20 @@ c.String(http.StatusOK, message)
 })
 ```
 
+## 返回HTML模板
+html模板文件中可以使用 `{{ .变量名 }}` 输出值
+
+定义变量
+{{ $t := .title}}
+
+### 比较
+eq ==
+ne !=
+lt <
+le <=
+gt >
+ge >=
+
+## 条件判断
+{{ if xx}} T1 {{ else if xxx}} T0 {{end}}
+
