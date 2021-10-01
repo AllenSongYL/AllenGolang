@@ -22,16 +22,16 @@ func exec_shell(s string) (string, error) {
 func exec_curl(ips, ipType string) {
 
 	// own测试环境
-	CurlCommand := "curl -k -u admin:'1qaz!QAZ' https://192.168.220.110:8089/services/data/inputs/udp/514 " +
-		"-d \"restrictToHost=" + ips + "&index=crcb_unix&sourcetype="
+	//CurlCommand := "curl -k -u admin:'1qaz!QAZ' https://192.168.220.110:8089/services/data/inputs/udp/514 " +
+	//	"-d \"restrictToHost=" + ips + "&index=crcb_unix&sourcetype="
 
 	// 农商行测试环境
-	// CurlCommand := "curl -k -u admin:'1qaz!QAZ' https://170.130.106.23:8089/services/data/inputs/udp/514 " +
+	//CurlCommand := "curl -k -u admin:'1qaz!QAZ' https://170.130.106.23:8089/services/data/inputs/udp/514 " +
 	//	"-d \"restrictToHost=" + ips + "&index=crcb_unix&sourcetype="
 
 	// 生产环境命令
-	//CurlCommand := "curl -k -u input:'1234qwer' https://10.13.130.21:8089/services/data/inputs/udp/514 " +
-	//	"-d \"restrictToHost=" + ips + "&index=crcb_unix&sourcetype="
+	CurlCommand := "curl -k -u input:'1234qwer' https://10.13.130.21:8089/services/data/inputs/udp/514 " +
+		"-d \"restrictToHost=" + ips + "&index=crcb_unix&sourcetype="
 
 	if ipType == "CENTOS" {
 		fmt.Println("开始添加centos_unix：", ips)
@@ -72,7 +72,10 @@ func main() {
 
 	// 测试环境 打开csv文件
 	//csvName := "G:\\GO\\笔记\\AllenGolang\\CurlAddInputs\\csvDir\\ip_assets.csv"
-	csvName := "/root/AutoInputs/ip_assets.csv"
+	//csvName := "/opt/splunk/etc/apps/search/lookups/test_input.csv"
+
+	// 生产环境
+	csvName := "/data/splunk/etc/apps/crcb_soc/lookups/auto_udp_inputs.csv"
 
 	timeStart := time.Now()
 	timeStartFormat := timeStart.Format("2006-01-02 15:04:05")
