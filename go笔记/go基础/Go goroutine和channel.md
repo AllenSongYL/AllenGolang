@@ -250,6 +250,64 @@ func main() {
 - 因为没有对全局变量加锁，所以会出现资源争夺问题，代码会出现错误
 - 解决方案，加入互斥锁
 
+### sync.Mutex互斥锁
+
+这个标记用来保证在任意时刻，只能有一个协程（线程）访问该资源。其它的协程只能等待。
+
+在使用互斥锁时，一定要注意：对资源操作完成后，一定要解锁，否则会出现流程执行异常，死锁等问题。通常借助 **[defer](https://haicoder.net/golang/golang-defer.html)**。锁定后，立即使用 defer 语句保证互斥锁及时解锁。
+
+*// 定义互斥锁变量 mutex* var mutex sync.Mutex
+
+ *// 对需要访问的资源加锁* mutex.Lock( ) 
+
+*// 资源访问结束解锁* mutex.Unlock( )
+
+
+
+### sync.RWMutex 读写锁
+
+读写锁可以让多个读操作并发，同时读取，但是对于写操作是完全互斥的。也就是说，当一个 goroutine 进行写操作的时候，其他 goroutine 既不能进行读操作，也不能进行写操作。
+
+#### 读写锁写数据
+
+*// 定义一个读写锁* var rwMux sync.RWMutex 
+
+*// 锁住需要写入的数据* rwMux.Lock() 
+
+*// 释放锁* rwMux.UnLock()
+
+#### 读写锁读数据
+
+*// 定义一个读写锁* var rwMux sync.RWMutex 
+
+*// 锁住需要读取的数据* rwMux.RLock() 
+
+*// 释放锁* rwMux.RUnLock()
+
+
+
+## 等待协程结束
+
+go语言中要等待goroutine结束，可以使用sync.WaitGroup相关操作。首先使用wg.Add方法增加需要等待的协程数量，然后每执行完一个协程，使用wg.Done表明协程结束，最后使用wg.Wait等待所有协程结束
+
+wg sync.WaitGroup
+
+wg.Add(num)
+
+设置需要等待的协程数
+
+
+
+wg.Done()
+
+一个协程处理结束
+
+
+
+wg.Wait()
+
+等待所有协程结束
+
 # 管道channel
 
 ## 基本介绍
@@ -383,6 +441,12 @@ close(管道名)
 
 
 
+msg,ok := <- msg_chan
+
+第二个bool类型的返回值表示管道是否关闭，如果为false，则表明管道已关闭
+
+
+
 ### 管道的遍历
 
 channel支持for-range的方式进行遍历
@@ -439,13 +503,53 @@ channel支持for-range的方式进行遍历
   var chan3  <- chan int
   ~~~
 
-  
+
+
+
+### 无缓冲channel
+
+channel有两种类型，分别为：无缓冲channel和带缓冲channel
+
+无缓冲的通道是指在接收前没有能力保存任何值的通道。这种类型的通道要求发送 **[goroutine](https://haicoder.net/golang/golang-goroutine.html)** 和接收 goroutine 同时准备好，才能完成发送和接收操作。
+
+创建
+
+c1 := make(chan int)
+
+
+
+### 带缓冲channel
+
+带缓冲的通道是一种在被接收前能存储一个或者多个值的通道。这种类型的通道并不强制要求 goroutine 之间必须同时完成发送和接收。
+
+带通道会阻塞发送和接收动作的条件也会不同。只有在通道中没有要接收的值时，接收动作才会阻塞。只有在通道没有可用缓冲区容纳被发送的值时，发送动作才会阻塞。
+
+c1:= make(chan TYPE, bufferSize)
+
+| 参数         | 描述                        |
+| ------------ | --------------------------- |
+| *c1*         | channel 变量名。            |
+| *chan*       | 创建 channel 使用的关键字。 |
+| *TYPE*       | channel 的类型。            |
+| *bufferSize* | channel 的缓冲区大小。      |
+
+
+
+### 无缓冲通道和带缓冲通道区别
+
+无缓冲的通道保证进行发送和接收的 goroutine 会在同一时间进行数据交换，而有缓冲的通道没有这种保证。
+
+在无缓冲通道的基础上，为通道增加一个有限大小的存储空间形成带缓冲通道。带缓冲通道在发送时无需等待接收方接收即可完成发送过程，并且不会发生阻塞，只有当存储空间满时才会发生阻塞。同理，如果缓冲通道中有数据，接收时将不会发生阻塞，直到通道中没有数据可读时，通道将会再度阻塞。
+
+无缓冲通道保证收发过程同步。而无缓冲是异步的收发过程，因此效率可以有明显的提升。
 
 # select
 
 传统的方法遍历管道时，如果不关闭会阻塞而导致dead lock
 
 可以使用select解决从管道取数据的阻塞问题
+
+在 select 中，我们可以使用 `time.After` 来实现 select 的超时控制，同时，我们还可以使用 **[break](https://haicoder.net/golang/golang-break.html)** 语句，来结束 select 语句
 
 ~~~
 for {
@@ -456,6 +560,8 @@ for {
 		fmt.Println("", v)
 	case v := <-stringchan :
 		fmt.Println("", v)
+	case <-time.After(10 * time.Second):
+		fmt.Println("Timed out")
 	default:
 		fmt.Println("可以加入自己的逻辑")
 		// 结束
@@ -467,5 +573,6 @@ for {
 
 
 
-goroutine中使用reco
+### goroutine中使用recover
 
+如果我们起了一个协程，但是这个协程出现了panic，如果我们没有捕获这个panic，就会造成整个程序崩溃，这时我们就可以在goroutine中使用revocer来捕获panic，进行处理，这二样即使这个协程发生问题，但是我们的主线程仍然不受影响，可以继续执行。
