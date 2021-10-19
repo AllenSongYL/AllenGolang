@@ -10,10 +10,8 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/thinkeridea/go-extend/exnet"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"log"
 	"net"
-	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -25,7 +23,6 @@ import (
 var sftpUserName = "allen"
 var sftpPassword = "111"
 var sftpAddress = "192.168.220.111"
-var LocalRootDir = "/root/XunJian/"
 var RemoteRootDir = "/allen/XunJian/"
 
 // 执行linux命令
@@ -104,28 +101,19 @@ func getConnect() *sftp.Client {
 	return sftpClient
 }
 
-// 上传文件到sftp服务器
-// 用来被 uploadDirectory 调用
-// uploadFile(sftpclient, "/root/XunJian/192.168.220.110/xxx.log", "/allen/XunJian")
-func uploadFile(sftpclient *sftp.Client, localFile, remoteFileDir string) {
-	srcfile, err := os.Open(localFile)
-	if err != nil {
-		fmt.Println("打开本地文件失败：", localFile)
-		log.Fatal(err)
-	}
-	defer srcfile.Close()
-
-	_, err = sftpclient.Stat(remoteFileDir)
+// 将获得的结果上传至sftp服务器
+func uploadFile(sftpclient *sftp.Client, results []byte, remoteFileDir, filename string) {
+	// 判断远程路径是否存在，不存在则创建
+	_, err := sftpclient.Stat(remoteFileDir)
 	if err != nil {
 		errcon := sftpclient.MkdirAll(remoteFileDir)
 		if errcon != nil {
-			fmt.Println("创建远程路径失败：", remoteFileDir)
-			log.Fatal(err)
+			fmt.Println("创建远程路径失败：", remoteFileDir, "。 请检查sftp账号权限！")
+			log.Fatal(errcon)
 		}
 	}
 
-	remoteFileName := path.Base(localFile)
-	remoteFullDir := path.Join(remoteFileDir, remoteFileName)
+	remoteFullDir := path.Join(remoteFileDir, filename)
 	dstfile, err := sftpclient.Create(remoteFullDir)
 	if err != nil {
 		fmt.Println("创建远程文件失败: ", remoteFullDir)
@@ -134,8 +122,7 @@ func uploadFile(sftpclient *sftp.Client, localFile, remoteFileDir string) {
 	fmt.Println("成功上传sftp: ", remoteFullDir)
 	defer dstfile.Close()
 
-	fileContent, _ := ioutil.ReadAll(srcfile)
-	_, err = dstfile.Write(fileContent)
+	_, err = dstfile.Write(results)
 	if err != nil {
 		fmt.Println("写入失败!")
 		log.Fatal(err)
@@ -345,19 +332,9 @@ func main() {
 		wg.Done()
 	})
 
-	// 将结果保存到指定的目录 + /ip地址/时间.log
-	//saveDir := "G:\\1.工作\\1.项目\\1_交通银行总行资料\\2021年资料\\应用部SPLUNK\\" + ip4addrs[0].String()
-	saveDir := LocalRootDir + ip4addrs[0].String()
-	_, err = os.Stat(saveDir)
-	if err != nil {
-		os.MkdirAll(saveDir, 755)
-	}
-	filename := path.Join(saveDir, filetime+".log")
-	fileobj, _ := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-
 	wg.Wait()
 
-	fmt.Fprintf(fileobj, "time: %v, ipaddrs: %v, memInfo: %v:%v:%v, swapInfo: %v:%v:%v, "+
+	fresults := fmt.Sprintf("time: %v, ipaddrs: %v, memInfo: %v:%v:%v, swapInfo: %v:%v:%v, "+
 		"memPer: %.2f%%, cpuFreePer: %.2f%%, upload: %v, splunkStatus: '%v', diskInfo(Filesystem,Size,Used,Avail,use%%,MountOn): %v ||\n",
 		timeNow,
 		ip4addrs,
@@ -374,13 +351,12 @@ func main() {
 		diskInfo,
 	)
 
+	results := []byte(fresults)
+
 	// 上传至sftp
 	// 测试环境地址
-	var remoteFilePath = RemoteRootDir + ip4addrs[0].String()
-	uploadFile(ftpclient, filename, remoteFilePath)
-
-	// 清理本地文件
-	os.Remove(filename)
+	var remoteFilePath = path.Join(RemoteRootDir, ip4addrs[0].String())
+	uploadFile(ftpclient, results, remoteFilePath, filetime+".log")
 
 	timeEnd := time.Now()
 	fmt.Println("程序运行结束。")
