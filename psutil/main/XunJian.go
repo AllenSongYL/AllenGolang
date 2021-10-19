@@ -79,7 +79,6 @@ func getConnect() *sftp.Client {
 
 	clientConfig = &ssh.ClientConfig{
 		// User: SFTP账户名
-
 		User:            sftpUserName,
 		Auth:            auth,
 		Timeout:         30 * time.Second,
@@ -140,8 +139,6 @@ func uploadFile(sftpclient *sftp.Client, localFile, remoteFileDir string) {
 	if err != nil {
 		fmt.Println("写入失败!")
 		log.Fatal(err)
-	} else {
-		fmt.Println("写入成功!")
 	}
 }
 
@@ -325,24 +322,28 @@ func main() {
 
 	// 获取巡检IP磁盘容量
 	var diskInfo string
-	for _, values := range ip4addrs {
-		ipLong, _ := exnet.IP2Long(values)
-		ipString, _ := exnet.Long2IPString(ipLong)
-		if _, ok := ipDisk[ipString]; ok {
-			diskCommand := "df -h|grep" + " " + strconv.Itoa(ipDisk[ipString])
-			diskInfo1, _ := exec_shell(diskCommand)
-			diskInfo = replaceSpace(diskInfo1)
-			strings.Replace(diskInfo, "\n", ";", -1)
-			break
-		} else if ipString == "182.248.56.231" {
-			diskInfo1, _ := exec_shell("df -h | grep home")
-			diskInfo = replaceSpace(diskInfo1)
-		} else {
-			diskInfo1, _ := exec_shell("df -h | grep -v Avail")
-			//fmt.Println(reflect.TypeOf(diskInfo))
-			diskInfo = replaceSpace(diskInfo1)
+	wg.Add(1)
+	ants.Submit(func() {
+		for _, values := range ip4addrs {
+			ipLong, _ := exnet.IP2Long(values)
+			ipString, _ := exnet.Long2IPString(ipLong)
+			if _, ok := ipDisk[ipString]; ok {
+				diskCommand := "df -h|grep" + " " + strconv.Itoa(ipDisk[ipString])
+				diskInfo1, _ := exec_shell(diskCommand)
+				diskInfo = replaceSpace(diskInfo1)
+				strings.Replace(diskInfo, "\n", ";", -1)
+				break
+			} else if ipString == "182.248.56.231" {
+				diskInfo1, _ := exec_shell("df -h | grep home")
+				diskInfo = replaceSpace(diskInfo1)
+			} else {
+				diskInfo1, _ := exec_shell("df -h | grep -v Avail")
+				//fmt.Println(reflect.TypeOf(diskInfo))
+				diskInfo = replaceSpace(diskInfo1)
+			}
 		}
-	}
+		wg.Done()
+	})
 
 	// 将结果保存到指定的目录 + /ip地址/时间.log
 	//saveDir := "G:\\1.工作\\1.项目\\1_交通银行总行资料\\2021年资料\\应用部SPLUNK\\" + ip4addrs[0].String()
