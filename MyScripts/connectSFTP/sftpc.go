@@ -85,7 +85,6 @@ func listFiles(sftpClient *sftp.Client, remoteFilePath string, localDir string) 
 			rmfile := path.Join(remoteFilePath, f.Name())
 			fmt.Println("Download remote file---> ", rmfile)
 			getfile(sftpClient, rmfile, localDir)
-
 		}
 	}
 }

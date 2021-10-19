@@ -2,29 +2,23 @@ package main
 
 import (
 	"fmt"
-	"go_env/LearnGo/TheAIgorithms/insertionSort"
-	"math/rand"
-	"time"
+	"go_env/LearnGo/TheAIgorithms/removeMulti"
 )
 
 func main() {
-	timeStart := time.Now()
-	timeStartFormat := timeStart.Format("2006-01-02 15:04:05")
-	fmt.Println("程序开始时间：", timeStartFormat)
 
-	var Aslice []int = make([]int, 10)
-	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < 10; i++ {
-		Aslice[i] = rand.Int()
-	}
-	fmt.Println(Aslice)
-	a := insertionSort.InsertionSort(Aslice)
-	fmt.Println(a)
-
-	// 程序结束输出
-	timeEnd := time.Now()
-	timeEndFormat := timeEnd.Format("2006-01-02 15:04:05")
-	fmt.Println("结束时间：", timeEndFormat)
-	timeSub := timeEnd.Sub(timeStart)
-	fmt.Println("运行时长：", timeSub)
+	nums := make([]int, 10)
+	nums[0] = 1
+	nums[1] = 1
+	nums[2] = 2
+	nums[3] = 2
+	nums[4] = 4
+	nums[5] = 7
+	nums[6] = 8
+	nums[7] = 9
+	nums[8] = 9
+	nums[9] = 9
+	fmt.Println(nums)
+	removeMulti.RemoveMultiNums(nums)
+	//fmt.Println(nums)
 }

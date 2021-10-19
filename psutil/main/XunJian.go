@@ -3,16 +3,30 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/panjf2000/ants/v2"
+	"github.com/pkg/sftp"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/thinkeridea/go-extend/exnet"
+	"golang.org/x/crypto/ssh"
+	"io/ioutil"
+	"log"
 	"net"
+	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var sftpUserName = "allen"
+var sftpPassword = "111"
+var sftpAddress = "192.168.220.111"
+var LocalRootDir = "/root/XunJian/"
+var RemoteRootDir = "/allen/XunJian/"
 
 // 执行linux命令
 func exec_shell(s string) (string, error) {
@@ -45,9 +59,120 @@ func replaceSpace(s string) string {
 	return str1
 }
 
+// 连接sftp服务器
+func getConnect() *sftp.Client {
+	// 声明变量类型
+	var (
+		auth         []ssh.AuthMethod
+		addr         string
+		clientConfig *ssh.ClientConfig
+		sshClient    *ssh.Client
+		sftpClient   *sftp.Client
+		err          error
+	)
+
+	// 创建ssh连接
+	auth = make([]ssh.AuthMethod, 0)
+
+	// SFTP账号密码
+	auth = append(auth, ssh.Password(sftpPassword))
+
+	clientConfig = &ssh.ClientConfig{
+		// User: SFTP账户名
+
+		User:            sftpUserName,
+		Auth:            auth,
+		Timeout:         30 * time.Second,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	addr = fmt.Sprintf("%s:%d", sftpAddress, 22)
+	sshClient, err = ssh.Dial("tcp", addr, clientConfig)
+	if nil != err {
+		fmt.Println("ssh 连接失败: ", sftpAddress, err)
+	} else {
+		fmt.Println("ssh 连接成功: ", sftpAddress)
+	}
+
+	// 通过sshClient,创建sftp客户端
+	sftpClient, err = sftp.NewClient(sshClient)
+	// err不为空，则表示连接失败
+	if nil != err {
+		fmt.Println("sftp.NewClient 创建失败", err)
+	} else {
+		fmt.Println("sftp.NewClient 创建成功")
+	}
+	return sftpClient
+}
+
+// 上传文件到sftp服务器
+// 用来被 uploadDirectory 调用
+// uploadFile(sftpclient, "/root/XunJian/192.168.220.110/xxx.log", "/allen/XunJian")
+func uploadFile(sftpclient *sftp.Client, localFile, remoteFileDir string) {
+	srcfile, err := os.Open(localFile)
+	if err != nil {
+		fmt.Println("打开本地文件失败：", localFile)
+		log.Fatal(err)
+	}
+	defer srcfile.Close()
+
+	_, err = sftpclient.Stat(remoteFileDir)
+	if err != nil {
+		errcon := sftpclient.MkdirAll(remoteFileDir)
+		if errcon != nil {
+			fmt.Println("创建远程路径失败：", remoteFileDir)
+			log.Fatal(err)
+		}
+	}
+
+	remoteFileName := path.Base(localFile)
+	remoteFullDir := path.Join(remoteFileDir, remoteFileName)
+	dstfile, err := sftpclient.Create(remoteFullDir)
+	if err != nil {
+		fmt.Println("创建远程文件失败: ", remoteFullDir)
+		log.Fatal(err)
+	}
+	fmt.Println("成功上传sftp: ", remoteFullDir)
+	defer dstfile.Close()
+
+	fileContent, _ := ioutil.ReadAll(srcfile)
+	_, err = dstfile.Write(fileContent)
+	if err != nil {
+		fmt.Println("写入失败!")
+		log.Fatal(err)
+	} else {
+		fmt.Println("写入成功!")
+	}
+}
+
+// 上传目录到sftp服务器
+//func uploadDirectory(sftpClient *sftp.Client, localDir, remoteDir string) {
+//	Lfile, err := ioutil.ReadDir(localDir)
+//	if nil != err {
+//		fmt.Println("读取本地目录失败", err)
+//		return
+//	}
+//	// 是目录则新建远程目录，并递归调用进入子目录
+//	// 是文件则上传
+//	for _, backupDir := range Lfile {
+//		if backupDir.IsDir() {
+//			localFilePath := path.Join(localDir, backupDir.Name())
+//			remoteFilePath := path.Join(remoteDir, backupDir.Name())
+//			sftpClient.Mkdir(remoteFilePath)
+//			uploadDirectory(sftpClient, localFilePath, remoteFilePath)
+//		} else {
+//			uploadFile(sftpClient, path.Join(localDir, backupDir.Name()), remoteDir)
+//		}
+//	}
+//}
+
 func main() {
 	// 输出当前时间
-	timeNow := time.Now().Format("2006-01-02 15:04:05")
+	timeStart := time.Now()
+	fmt.Println("程序开始运行......")
+	timeNow := timeStart.Format("2006-01-02 15:04:05")
+	fmt.Println("开始时间： ", timeNow)
+	filetime := timeStart.Format("20060102_150405")
 
 	// 输出内存信息
 	memInfo, _ := mem.VirtualMemory()
@@ -60,16 +185,31 @@ func main() {
 	swapFree := memInfo.SwapFree / 1024 / 1024 / 1024
 
 	// 输出CPU信息
-	const HunPer float64 = 100
-	cpuPer1, _ := cpu.Percent(3*time.Second, false)
-	cpuPer2 := cpuPer1[0]
-	cpuFreePer := HunPer - cpuPer2
+	defer ants.Release()
+	var wg sync.WaitGroup
+	var cpuFreePer float64
+	wg.Add(1)
+	ants.Submit(func() {
+		const HunPer float64 = 100
+		cpuPer1, _ := cpu.Percent(3*time.Second, false)
+		cpuPer2 := cpuPer1[0]
+		cpuFreePer = HunPer - cpuPer2
+		wg.Done()
+	})
+
+	// 连接sftp地址
+	var ftpclient *sftp.Client
+	wg.Add(1)
+	ants.Submit(func() {
+		ftpclient = getConnect()
+		wg.Done()
+	})
 
 	// CPU负载信息
 	cpuUpload, _ := load.Avg()
 
 	// 查看splunk进程
-	splCommand := "ps aux | grep -v color | grep splunk | wc -l"
+	splCommand := "ps aux | grep -v grep | grep splunk | wc -l"
 	stdout1, _ := exec_shell(splCommand)
 	stdout := strings.TrimSuffix(stdout1, "\n")
 	splunklen, _ := strconv.Atoi(stdout)
@@ -88,6 +228,7 @@ func main() {
 		return
 	}
 
+	// 拿到IP地址
 	for _, address := range addrs {
 		// 检查ip地址判断是否回环地址
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -203,8 +344,20 @@ func main() {
 		}
 	}
 
-	fmt.Printf("time: %v, ipaddrs: %v, memInfo: %v:%v:%v, swapInfo: %v:%v:%v, "+
-		"memPer: %.2f%%, cpuFreePer: %.2f%%, upload: %v, splunkStatus: '%v', diskInfo(Filesystem,Size,Used,Avail,use%%,MountOn): %v\n",
+	// 将结果保存到指定的目录 + /ip地址/时间.log
+	//saveDir := "G:\\1.工作\\1.项目\\1_交通银行总行资料\\2021年资料\\应用部SPLUNK\\" + ip4addrs[0].String()
+	saveDir := LocalRootDir + ip4addrs[0].String()
+	_, err = os.Stat(saveDir)
+	if err != nil {
+		os.MkdirAll(saveDir, 755)
+	}
+	filename := path.Join(saveDir, filetime+".log")
+	fileobj, _ := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+
+	wg.Wait()
+
+	fmt.Fprintf(fileobj, "time: %v, ipaddrs: %v, memInfo: %v:%v:%v, swapInfo: %v:%v:%v, "+
+		"memPer: %.2f%%, cpuFreePer: %.2f%%, upload: %v, splunkStatus: '%v', diskInfo(Filesystem,Size,Used,Avail,use%%,MountOn): %v ||\n",
 		timeNow,
 		ip4addrs,
 		memInfoTotal,
@@ -219,4 +372,18 @@ func main() {
 		splunkStats,
 		diskInfo,
 	)
+
+	// 上传至sftp
+	// 测试环境地址
+	var remoteFilePath = RemoteRootDir + ip4addrs[0].String()
+	uploadFile(ftpclient, filename, remoteFilePath)
+
+	// 清理本地文件
+	os.Remove(filename)
+
+	timeEnd := time.Now()
+	fmt.Println("程序运行结束。")
+	fmt.Println("结束时间： ", timeEnd.Format("2006-01-02 15:04:05"))
+	timeSub := timeEnd.Sub(timeStart)
+	fmt.Println("运行时长：", timeSub)
 }

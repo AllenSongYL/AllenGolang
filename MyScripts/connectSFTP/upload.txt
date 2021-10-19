@@ -1,22 +1,22 @@
-// 上传文件
-//func uploadFile(sftpClient *sftp.Client, localFile, remotePath string) {
-//	file, err := os.Open(localFile)
-//	if nil != err {
-//		fmt.Println("os.Open error", err)
-//		return
-//	}
-//	defer file.Close()
-//	remoteFileName := path.Base(localFile)
-//	ftpFile, err := sftpClient.Create(path.Join(remotePath, remoteFileName)) // 这里的remotePath是sftp根目录下的目录，是目录不是文件名
-//	if nil != err {
-//		fmt.Println("sftpClient.Create error", err)
-//		return
-//	}
-//	defer ftpFile.Close()
-//	fileByte, err := ioutil.ReadAll(file)
-//	if nil != err {
-//		fmt.Println("ioutil.ReadAll error", err)
-//		return
-//	}
-//	ftpFile.Write(fileByte)
-//}
+ // 上传文件
+func uploadFile(sftpClient *sftp.Client, localFile, remotePath string) {
+	file, err := os.Open(localFile)
+	if nil != err {
+		fmt.Println("os.Open error", err)
+		return
+	}
+	defer file.Close()
+	remoteFileName := path.Base(localFile)
+	ftpFile, err := sftpClient.Create(path.Join(remotePath, remoteFileName))  这里的remotePath是sftp根目录下的目录，是目录不是文件名
+	if nil != err {
+		fmt.Println("sftpClient.Create error", err)
+		return
+	}
+	defer ftpFile.Close()
+	fileByte, err := ioutil.ReadAll(file)
+	if nil != err {
+		fmt.Println("ioutil.ReadAll error", err)
+		return
+	}
+	ftpFile.Write(fileByte)
+}
