@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"fmt"
-	"github.com/panjf2000/ants/v2"
 	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
@@ -13,7 +12,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -22,17 +20,14 @@ import (
 // destdir: "/home/applog/531PBANK_1/ASCPEBS201"
 func forDir(sourcedirs, destdir string) {
 	listfile, _ := ioutil.ReadDir(sourcedirs)
-	fmt.Println(listfile)
 	for _, file := range listfile {
 		if file.IsDir() {
 			destdir2 := path.Join(destdir, file.Name())
-			fmt.Println(destdir2)
 			if _, err := os.Stat(destdir2); err != nil {
 				os.MkdirAll(destdir2, 644)
 			}
 			forDir(path.Join(sourcedirs, file.Name()), destdir2)
 		} else if strings.Contains(file.Name(), ".tar") {
-			fmt.Println("匹配到tar包", file.Name())
 			// 打开源tar包
 			tarfile, err := os.Open(path.Join(sourcedirs, file.Name()))
 			if err != nil {
@@ -62,13 +57,11 @@ func forDir(sourcedirs, destdir string) {
 				}
 
 				dstFileOrDie := path.Join(destdir, f.Name)
-				fmt.Println(dstFileOrDie)
 
 				switch f.Typeflag {
 				// 是文件则写入
 				case tar.TypeReg:
 					fw, err := os.OpenFile(dstFileOrDie, os.O_CREATE|os.O_WRONLY, 0644)
-					fmt.Println("解压文件------>", dstFileOrDie)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -78,7 +71,7 @@ func forDir(sourcedirs, destdir string) {
 					if err != nil {
 						fmt.Println("解压写入失败！！！")
 					} else {
-						fmt.Println("<--- 解压成功 --->")
+						fmt.Println("<--- 解压成功 ", dstFileOrDie, " --->")
 					}
 
 				// 是目录则创建
@@ -96,8 +89,6 @@ func forDir(sourcedirs, destdir string) {
 	}
 }
 
-var wg sync.WaitGroup
-
 func main() {
 	timeStart := time.Now()
 	fmt.Println("程序开始运行......")
@@ -109,7 +100,7 @@ func main() {
 	expath := filepath.Dir(ex)
 
 	//configdir := path.Join(expath, "tarConfig.json")
-	defer ants.Release()
+
 	// viper 配置读取配置文件
 	viper.SetConfigName("tarConfig")
 	viper.SetConfigType("json")
@@ -132,14 +123,9 @@ func main() {
 		if _, err := os.Stat(targetDir2); err != nil {
 			os.MkdirAll(targetDir2, 0644)
 		}
-		wg.Add(1)
-
-		ants.Submit(func() {
-			forDir(i, targetDir2)
-			wg.Done()
-		})
+		forDir(i, targetDir2)
 	}
-	wg.Wait()
+
 	timeEnd := time.Now()
 	timeEndFormat := timeEnd.Format("2006-01-02 15:04:05")
 	fmt.Println("结束时间：", timeEndFormat)
