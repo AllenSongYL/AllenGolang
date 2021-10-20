@@ -1,0 +1,9 @@
+{
+    "rootDir":[
+        "/home/applog/531PBANK/ASCPEBS201",
+        "/home/applog/531PBANK/ASCPEBS216",
+        "/home/applog/531PBANK/ASCPMPS201",
+        "/home/applog/531PBANK/ASCPMPS202"
+    ],
+    "targetDir":"/home/applog/531PBANK_1/"
+}

@@ -1,0 +1,43 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	_ "github.com/panjf2000/ants/v2"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
+	"path/filepath"
+)
+
+func main() {
+	// tarConfig.json对应的结构体
+	type ConfigStruct struct {
+		RootDir []string
+		TargetDir string
+	}
+
+	// 获取程序当前路径
+	ex,_ := os.Executable()
+	expath := filepath.Dir(ex)
+	fmt.Println(expath)
+	configdir := path.Join(expath, "tarConfig.json")
+	configJson, err := os.Open(configdir)
+	if err != nil {
+		fmt.Println("打开配置文件 config.json 失败！！！")
+		log.Fatal(err)
+	}
+	defer configJson.Close()
+	b,_ := ioutil.ReadAll(configJson)
+	var results ConfigStruct
+	json.Unmarshal([]byte(b), &results)
+	fmt.Println(results.RootDir)
+	fmt.Println(results.TargetDir)
+	//err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+	//
+	//})
+
+
+
+}
