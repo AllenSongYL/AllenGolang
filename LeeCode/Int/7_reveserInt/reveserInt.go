@@ -16,10 +16,17 @@ func reverse(x int) int {
 	for ; x != 0; x /= 10 {
 		// 如果溢出则返回0
 		if temp := int32(res); (temp*10)/10 != temp {
-			fmt.Println("zhi", (temp*10)/10)
+			fmt.Println("溢出值： ", (temp*10)/10)
 			return 0
 		}
+		// 0+5
+		// 50*10 + 4
+		// 54*10 + 3
+		// 543*10 + 2
+		// 5432*10 + 1
 		res = res*10 + x%10
+		fmt.Println("x % ：", x%10)
+		fmt.Println("res: ", res)
 		// 通过除以10，逐步拿到x的所有位，5 / 10 = 0 退出循环
 	}
 	return res
@@ -27,7 +34,7 @@ func reverse(x int) int {
 
 func main() {
 	start := time.Now()
-	testInt := 123456789
+	testInt := 120
 	fmt.Println(reverse(testInt))
 	fmt.Println(time.Since(start))
 }
