@@ -1,0 +1,100 @@
+type MyLinkedList struct {
+Val int
+Next *MyLinkedList
+}
+
+func Constructor() MyLinkedList {
+return MyLinkedList{
+Val: 0,
+Next: nil,
+}
+}
+
+// Get方法: 通过输入索引位，返回该位置的值
+func (this *MyLinkedList) Get(index int) int {
+tmp := this
+if this.Next == nil {
+return -1
+}
+counts := 1
+for {
+tmp = tmp.Next
+if counts == index {
+return tmp.Val
+}
+counts++
+if tmp.Next == nil{
+return -1
+}
+}
+}
+
+// AddAtHead方法：在链表的第一个元素之前添加一个值为 val 的节点。
+// 插入后，新节点将成为链表的第一个节点。
+func (this *MyLinkedList) AddAtHead(val int)  {
+// 新建一个newhead，Next指向原本的第一位
+newhead := &MyLinkedList{Val: val}
+newhead.Next = this.Next
+
+// 头结点指向新建的newhead
+this.Next = newhead
+}
+
+
+func (this *MyLinkedList) AddAtTail(val int)  {
+tmp := this.Next
+new2 := &MyLinkedList{Val: val}
+for {
+
+if tmp.Next == nil {
+break
+}
+
+tmp = tmp.Next
+}
+tmp.Next = new2
+}
+
+
+func (this *MyLinkedList) AddAtIndex(index int, val int)  {
+if index <= 0 {
+this.AddAtHead(val)
+}
+
+new3 := &MyLinkedList{Val: val}
+tmp := this
+counts := 0
+
+for {
+if counts == index {
+new3.Next = tmp.Next
+tmp.Next = new3
+break
+}
+if tmp.Next == nil{
+break
+}
+tmp = tmp.Next
+counts++
+}
+}
+
+func (this *MyLinkedList) DeleteAtIndex(index int)  {
+if index <0 {
+return
+}
+tmp := this
+counts := 0
+for {
+
+if counts == index  && tmp.Next != nil{
+tmp.Next = tmp.Next.Next
+break
+}
+counts++
+if counts>index || tmp.Next == nil{
+break
+}
+tmp = tmp.Next
+}
+}
